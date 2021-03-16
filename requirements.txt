@@ -1,0 +1,6 @@
+googletrans==3.1.0a0
+notify2==0.3.1
+pyaudio==0.2.11
+pyperclip==1.8.2
+pynput==1.7.3
+SpeechRecognition==3.8.1

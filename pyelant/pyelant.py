@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Python Easy Language Translator PyElant is a python tool for easily performing
 translations and storing it on the clipboard.
@@ -8,7 +6,7 @@ Input can be received via microphone, command line or the clipboard itself.
  @brief   PyElant
  @author  Paulo Marcos
  @date    2021-03-19
- Copyright (c) 2021 paulomarcos@me.com
+ Copyright (c) 2021 paulomarcosdj  <@> outlook.com
 """
 
 # pylint: disable-msg=C0103

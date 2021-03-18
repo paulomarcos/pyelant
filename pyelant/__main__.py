@@ -1,9 +1,16 @@
+"""
+PyElant main module.
+
+ @brief   PyElant
+ @author  Paulo Marcos
+ @date    2021-03-19
+ Copyright (c) 2021 paulomarcosdj  <@> outlook.com
+"""
+
 import argparse
-from pyelant import PyElant
+from .pyelant import PyElant
 
-
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser(description='PyElant: insert input and output languages.')
     parser.add_argument('-i', '--input_language', type=str,
                         help='Input language to be translated. Example: "en", "jp", "fr".')
@@ -17,8 +24,12 @@ if __name__ == "__main__":
                         help='Verbose mode')
 
     args = parser.parse_args()
-    pyelant = PyElant(args.input_language,
-                      args.output_language,
-                      args.text,
-                      args.disable_notification,
-                      args.verbose)
+    PyElant(args.input_language,
+            args.output_language,
+            args.text,
+            args.disable_notification,
+            args.verbose)
+
+
+if __name__ == "__main__":
+    main()

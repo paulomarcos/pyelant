@@ -33,7 +33,7 @@ There are three ways of using pyelant:
 ### 1. Via microphone
 First, initiate the program using the command line and let it run on the background:
 ```sh
-pyelant 
+python3 -m pyelant 
 ```
 Then press `CTRL + ALT + M` to start listening. Say something and wait for the program to execute the translation.
 Once it's done, it will automatically place it in your clipboard, so you can easily paste it wherever you want.
@@ -41,7 +41,7 @@ Once it's done, it will automatically place it in your clipboard, so you can eas
 ### 2. Via clipboard
 First, initiate the program using the command line and let it run on the background:
 ```sh
-pyelant 
+python3 -m pyelant 
 ```
 Then press `CTRL + ALT + E` to translate the text that is already in your clipboard. 
 Once it's done, it will automatically place it in your clipboard, so you can easily paste it wherever you want.
@@ -49,18 +49,18 @@ Once it's done, it will automatically place it in your clipboard, so you can eas
 ### 3. Via command line
 First, run the program with the `-t` or `--text` argument
 ```sh
-pyelant -t "This sentence will be translated to Japanese."
+python3 -m pyelant -t "This sentence will be translated to Japanese."
 ```
 And it will automatically store the translation in your clipboard.
 
 ## Choosing languages
-PyElant comes by default with English as the input language and Japanese as the output language.
+python3 -m PyElant comes by default with English as the input language and Japanese as the output language.
 Currently the program can only accept a single pair of languages per execution, meaning that you need to close the program to change languages.
 To translate other languages use the `-i` or `--input_language` and `-o` or `--output_language` as follows:
 ```sh
-pyelant -i pt -o en   # To run in the background and translate from Portuguese to English
-pyelant -i fr -o kr   # To run in the backrground and translate from French to Korean
-pyelant -i En -o it -t "This sentence will be translated from English to Italian."
+python3 -m pyelant -i pt -o en   # To run in the background and translate from Portuguese to English
+python3 -m pyelant -i fr -o kr   # To run in the backrground and translate from French to Korean
+python3 -m pyelant -i En -o it -t "This sentence will be translated from English to Italian."
 ```
 ## Other options
 To disable the system notification use `-dn` or `--disable_notification`.

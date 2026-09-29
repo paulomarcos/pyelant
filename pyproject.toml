@@ -59,6 +59,10 @@ path = "pyelant/__init__.py"
 [tool.hatch.build.targets.sdist]
 include = ["pyelant", "tests", "README.md", "LICENSE.txt"]
 
+[tool.pytest.ini_options]
+addopts = "-m 'not network'"
+markers = ["network: tests that call the real Google Translate service"]
+
 [tool.ruff]
 line-length = 100
 

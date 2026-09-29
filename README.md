@@ -122,7 +122,8 @@ rate limited.
 ```sh
 git clone https://github.com/paulomarcos/pyelant
 cd pyelant
-uv run --all-extras pytest    # run the tests
+uv run --all-extras pytest    # run the tests (offline)
+uv run pytest -m network      # run the live tests against Google Translate
 uv run ruff check             # lint
 uv build                      # build the sdist and wheel
 ```

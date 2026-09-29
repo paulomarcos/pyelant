@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyelant"
+dynamic = ["version"]
+description = "Python tool for easily performing translations and storing them on the clipboard."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+authors = [{ name = "Paulo Marcos", email = "paulomarcos@me.com" }]
+requires-python = ">=3.10"
+keywords = ["translation", "clipboard", "easy"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "desktop-notifier>=6.0",
+    "googletrans>=4.0.2",
+    "pynput>=1.8",
+    "pyperclip>=1.9",
+]
+
+[project.optional-dependencies]
+mic = [
+    "PyAudio>=0.2.14",
+    "SpeechRecognition>=3.14",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+pyelant = "pyelant.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/paulomarcos/pyelant"
+Issues = "https://github.com/paulomarcos/pyelant/issues"
+
+[tool.hatch.version]
+path = "pyelant/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["pyelant", "tests", "README.md", "LICENSE.txt"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE", "RUF"]

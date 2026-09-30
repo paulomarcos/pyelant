@@ -6,7 +6,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/pyelant)](https://pypi.org/project/pyelant/)
 [![CI](https://github.com/paulomarcos/pyelant/actions/workflows/ci.yml/badge.svg)](https://github.com/paulomarcos/pyelant/actions/workflows/ci.yml)
 
-PyElant is a small command line tool that translates text and puts the result on your clipboard.
+PyElant is a small command line tool that translates text with Google Translate and puts the
+result on your clipboard.
 It can take input from the command line, from the clipboard or from your microphone.
 
 Leave it running in the background and use a hotkey to translate whatever you just copied, or what you
@@ -51,9 +52,9 @@ tools like this one: `pipx install pyelant` or `uv tool install pyelant`.
 
 There are three ways to use PyElant:
 
-1. [Command line](#command-line): translate a piece of text right away.
-2. [Clipboard](#clipboard): press a hotkey to translate what you copied.
-3. [Microphone](#microphone): press a hotkey and speak.
+1. **Command line**: translate a piece of text right away.
+2. **Clipboard**: press a hotkey to translate what you copied.
+3. **Microphone**: press a hotkey and speak.
 
 ### Command line
 

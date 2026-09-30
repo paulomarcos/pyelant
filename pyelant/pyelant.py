@@ -1,121 +1,155 @@
 """
-Python Easy Language Translator PyElant is a python tool for easily performing
-translations and storing it on the clipboard.
-Input can be received via microphone, command line or the clipboard itself.
+Python Easy Language Translator.
 
- @brief   PyElant
- @author  Paulo Marcos
- @date    2021-03-19
- Copyright (c) 2021 paulomarcosdj  <@> outlook.com
+Translates text from the command line, the clipboard or the microphone and
+places the result on the clipboard.
 """
 
-# pylint: disable-msg=C0103
+import asyncio
 import sys
-import speech_recognition as sr
-from googletrans import Translator
-from pynput import keyboard
+import threading
+
 import pyperclip
-import notify2
+from googletrans import LANGCODES, LANGUAGES, Translator
+
+APP_NAME = "pyelant"
+CLIPBOARD_HOTKEY = "<ctrl>+<alt>+e"
+MICROPHONE_HOTKEY = "<ctrl>+<alt>+m"
+
+
+def normalize_language(language, allow_auto=False):
+    """Return the language code for a code or name such as "ja" or "Japanese".
+
+    Raises ValueError if the language is not supported.
+    """
+    language = language.strip().lower()
+    if allow_auto and language == "auto":
+        return language
+    if language in LANGUAGES:
+        return language
+    if language in LANGCODES:
+        return LANGCODES[language]
+    raise ValueError(f"unsupported language: {language!r}")
 
 
 class PyElant:
-    """ PyElant class """
+    """Translates text and copies the result to the clipboard."""
 
-    def __init__(self, input_language, output_language, text, disable_notification, verbose):
+    def __init__(self, input_language="en", output_language="ja",
+                 notifications=True, verbose=False):
         self.input_language = input_language
         self.output_language = output_language
-        self.text = text
-        self.disable_notification = disable_notification
+        self.notifications = notifications
         self.verbose = verbose
+        self._notifier = None
+        self._busy = threading.Lock()
 
-        kk = keyboard.Key
-        self.combination_clipboard = {kk.alt, kk.ctrl, keyboard.KeyCode.from_char('e')}
-        self.combination_microphone = {kk.alt, kk.ctrl, keyboard.KeyCode.from_char('m')}
-        self.current = set()
-        self.listener = None
+    def translate(self, text):
+        """Return the translation of text."""
+        return asyncio.run(self._translate(text))
 
-        if self.input_language is None:
-            self.input_language = "en"
-        if self.output_language is None:
-            self.output_language = "ja"
+    async def _translate(self, text):
+        async with Translator() as translator:
+            result = await translator.translate(text,
+                                                src=self.input_language,
+                                                dest=self.output_language)
+        return result.text
 
-        if self.text is not None:
-            PyElant.translate_text(self.text)
-            sys.exit(0)
+    def translate_to_clipboard(self, text):
+        """Translate text, copy the result to the clipboard and return it."""
+        translation = self.translate(text)
+        self.log(f"Input: {text}")
+        self.log(f"Output: {translation}")
+        pyperclip.copy(translation)
+        self.notify(text, f"{translation} was copied to the clipboard")
+        return translation
 
-        PyElant.background_translator(self)
+    def translate_clipboard(self):
+        """Translate the text currently in the clipboard back into it."""
+        text = pyperclip.paste()
+        if not text.strip():
+            self.log("Clipboard is empty")
+            return
+        self.translate_to_clipboard(text)
 
-    def background_translator(self):
-        """ Runs in the background and waits for key press """
-        with keyboard.Listener(on_press=lambda event: PyElant.on_press(self, event),
-                               on_release=lambda event: PyElant.on_release(self, event)) as self.listener:
-            self.listener.join()
-    
-    def clipboard_translator(self):
-        """ Translates from the clipboard back to itself """
-        self.text = pyperclip.paste()
-        PyElant.translate_text(self)
+    def translate_speech(self):
+        """Listen to the microphone and translate what was said."""
+        try:
+            import pyaudio  # noqa: F401  (required by speech_recognition.Microphone)
+            import speech_recognition as sr
+        except ImportError:
+            print('Microphone support is not installed. Run: pip install "pyelant[mic]"',
+                  file=sys.stderr)
+            return
+        if self.input_language == "auto":
+            print("Microphone input needs an explicit input language, e.g. -i en",
+                  file=sys.stderr)
+            return
 
-    def start_listening(self):
-        """ Start listening for microphone input """
-        # obtain audio from the microphone
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
-            PyElant.printv(self.verbose, "Say something")
+            self.log("Say something")
             audio = recognizer.listen(source)
 
-        # recognize speech using Google Speech Recognition
         try:
-            self.text = recognizer.recognize_google(audio, language=self.input_language)
-            PyElant.translate_text(self)
+            text = recognizer.recognize_google(audio, language=self.input_language)
         except sr.UnknownValueError:
-            PyElant.printv(self.verbose, "Speech Recognition could not understand audio")
+            self.log("Speech Recognition could not understand audio")
+            return
         except sr.RequestError as error:
-            PyElant.printv(self.verbose, "Could not request results from Speech Recognition service; {0}".format(error))
+            print(f"Could not request results from Speech Recognition service: {error}",
+                  file=sys.stderr)
+            return
+        self.translate_to_clipboard(text)
 
-    def on_press(self, key):
-        """ Detects key press and performs either translation via microphone or clipboard """
-        if key in self.combination_clipboard:
-            self.current.add(key)
-            if all(k in self.current for k in self.combination_clipboard):
-                PyElant.clipboard_translator(self)
-        if key in self.combination_microphone:
-            self.current.add(key)
-            if all(k in self.current for k in self.combination_microphone):
-                PyElant.start_listening(self)
-        if key == keyboard.Key.esc:
-            self.listener.stop()
+    def run(self):
+        """Wait for hotkeys in the background until interrupted with Ctrl+C."""
+        # Imported here so that one-off translations work without a display server.
+        from pynput import keyboard
 
-    def on_release(self, key):
-        """ Detects key release to reset key buffer """
+        hotkeys = {
+            CLIPBOARD_HOTKEY: lambda: self._start_job(self.translate_clipboard),
+            MICROPHONE_HOTKEY: lambda: self._start_job(self.translate_speech),
+        }
+        print(f"PyElant is running ({self.input_language} -> {self.output_language}). "
+              "Ctrl+Alt+E translates the clipboard, Ctrl+Alt+M listens to the microphone. "
+              "Press Ctrl+C to quit.")
+        with keyboard.GlobalHotKeys(hotkeys) as listener:
+            try:
+                listener.join()
+            except KeyboardInterrupt:
+                listener.stop()
+
+    def _start_job(self, job):
+        """Run job in a worker thread so the key listener is never blocked."""
+        if not self._busy.acquire(blocking=False):
+            self.log("A translation is already in progress")
+            return
+        threading.Thread(target=self._run_job, args=(job,), daemon=True).start()
+
+    def _run_job(self, job):
         try:
-            self.current.remove(key)
-        except KeyError:
-            pass
+            job()
+        except Exception as error:  # noqa: BLE001
+            # Keep the background listener alive whatever goes wrong.
+            print(f"Translation failed: {error}", file=sys.stderr)
+        finally:
+            self._busy.release()
 
-    def translate_text(self):
-        """ Translates text from a specified input language to the specified output language """
+    def notify(self, title, message):
+        """Show a desktop notification, if enabled and supported."""
+        if not self.notifications:
+            return
         try:
-            TRANSLATOR = Translator()
-            result = TRANSLATOR.translate(self.text,
-                                          src=self.input_language,
-                                          dest=self.output_language)
-            PyElant.printv(self.verbose, "Input: {}".format(self.text))
-            PyElant.printv(self.verbose, "Output: {}".format(result.text))
-            pyperclip.copy(result.text)
-        except ValueError as error:
-            PyElant.printv(self.verbose, "Error found.")
-            sys.exit(error)
-        if not self.disable_notification:
-            notify2.init('pyelant')
-            notify = notify2.Notification(self.text,
-                                          result.text + " was copied to the clipboard",
-                                          "notification-message-im"   # Icon name
-                                         )
-            notify.show()
-        
-    @staticmethod
-    def printv(verbose, text):
-        """ Print message if verbose is on """
-        if verbose:
-            print(text)
+            if self._notifier is None:
+                from desktop_notifier import DesktopNotifierSync
+                self._notifier = DesktopNotifierSync(app_name=APP_NAME)
+            self._notifier.send(title=title, message=message)
+        except Exception as error:  # noqa: BLE001
+            # Notifications are a nicety; never let them break a translation.
+            self.log(f"Could not show notification: {error}")
+
+    def log(self, message):
+        """Print message if verbose mode is on."""
+        if self.verbose:
+            print(message)

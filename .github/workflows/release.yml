@@ -1,0 +1,25 @@
+name: Release
+
+# Publishes to PyPI when a GitHub Release is published. Uses PyPI trusted publishing,
+# so no API token is stored in the repository.
+on:
+  release:
+    types: [published]
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/pyelant/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Build
+        run: uv build
+      - name: Check the release tag matches the package version
+        run: test -f "dist/pyelant-${GITHUB_REF_NAME#v}-py3-none-any.whl"
+      - name: Publish to PyPI
+        run: uv publish

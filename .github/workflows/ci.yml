@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Weekly, so breakage from new dependency releases or Google changes is flagged
+    # even when nothing is pushed.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install system libraries (PortAudio for PyAudio, Xvfb for pynput)
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev xvfb
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check the lockfile is up to date
+        run: uv lock --check
+      - name: Lint
+        run: uv run --all-extras ruff check
+      - name: Test
+        run: xvfb-run -a uv run --all-extras pytest
+      - name: Build
+        run: uv build
+
+  dependencies:
+    # The test job uses the locked versions. This checks the newest releases and the
+    # oldest versions pyproject.toml allows.
+    name: ${{ matrix.resolution }} dependencies (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.10"
+            resolution: lowest-direct
+          - python-version: "3.14"
+            resolution: highest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install system libraries (PortAudio for PyAudio, Xvfb for pynput)
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev xvfb
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Resolve dependencies
+        run: uv lock --upgrade --resolution ${{ matrix.resolution }}
+      - name: Test
+        run: xvfb-run -a uv run --all-extras pytest
+
+  network:
+    name: Live translation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+      - name: Test against the real Google Translate service
+        run: uv run pytest -m network

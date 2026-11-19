@@ -13,7 +13,7 @@ on:
 jobs:
   test:
     name: Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # pinned: ubuntu-latest is moving to 26.04
     strategy:
       fail-fast: false
       matrix:
@@ -38,7 +38,7 @@ jobs:
     # The test job uses the locked versions. This checks the newest releases and the
     # oldest versions pyproject.toml allows.
     name: ${{ matrix.resolution }} dependencies (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # pinned: ubuntu-latest is moving to 26.04
     strategy:
       fail-fast: false
       matrix:
@@ -61,7 +61,7 @@ jobs:
 
   network:
     name: Live translation
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # pinned: ubuntu-latest is moving to 26.04
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
